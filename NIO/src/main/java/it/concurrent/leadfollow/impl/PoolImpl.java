@@ -13,9 +13,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
 
 public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 
+	private static final Logger LOGGER=Logger.getLogger(Pool.class.getCanonicalName());
+	
 	private Object parking = new Object();
 
 	private Collection<PoolListener> poolListeners = Collections.synchronizedList(new ArrayList<PoolListener>());
@@ -47,6 +50,7 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 						PoolThreadImpl<EVENT> poolThread = poolIterator.next();
 						if (poolThread.isExpired()) {
 							try {
+								poolThread.shutdown();
 								poolThread.interrupt();
 							} catch (Throwable t) {
 							}

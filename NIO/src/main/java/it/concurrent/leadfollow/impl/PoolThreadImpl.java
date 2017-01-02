@@ -20,6 +20,8 @@ public class PoolThreadImpl<EVENT extends Event> extends Thread implements PoolT
 	private AtomicBoolean isLeader = new AtomicBoolean(false);
 
 	private static final int MAX_EXPIRED_TIME = 30000;
+	
+	private volatile boolean stopped=false;
 
 	public PoolThreadImpl(Object parking, PoolImpl<EVENT> pool, EventHandler<EVENT> eventHandler) {
 		this.parking = parking;
@@ -30,13 +32,13 @@ public class PoolThreadImpl<EVENT extends Event> extends Thread implements PoolT
 	@Override
 	public void run() {
 		try {
-			while (!pool.isToStop()) {
+			while (!this.isStopped() ) {
 
-				while (pool.existLeader() && !pool.isToStop()) {
+				while (pool.existLeader() && !this.isStopped()) {
 
 					synchronized (parking) {
 
-						if (pool.isToStop()) {
+						if (this.isStopped()) {
 							return;
 						}
 						isLeader.set(false);
@@ -70,6 +72,9 @@ public class PoolThreadImpl<EVENT extends Event> extends Thread implements PoolT
 		}
 	}
 
+	protected boolean isStopped(){
+		return pool.isToStop() || stopped;
+	}
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -77,8 +82,9 @@ public class PoolThreadImpl<EVENT extends Event> extends Thread implements PoolT
 	 */
 	@Override
 	public void shutdown() {
-		synchronized (parking) {
-			parking.notify();
+		this.stopped=true;
+		synchronized (this.parking) {
+			this.parking.notify();
 		}
 	}
 
