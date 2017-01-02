@@ -10,4 +10,6 @@ public interface Pool<EVENT extends Event> {
 
 	public boolean isShutDown();
 
+	public void join();
+
 }

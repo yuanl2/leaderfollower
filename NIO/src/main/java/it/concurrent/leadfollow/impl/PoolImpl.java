@@ -18,9 +18,11 @@ import java.util.logging.Logger;
 
 public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 
-	private static final Logger LOGGER=Logger.getLogger(Pool.class.getCanonicalName());
-	
+	private static final Logger LOGGER = Logger.getLogger(Pool.class.getCanonicalName());
+
 	private Object parking = new Object();
+	
+	private Object stopMutex = new Object();
 
 	private Collection<PoolListener> poolListeners = Collections.synchronizedList(new ArrayList<PoolListener>());
 
@@ -37,9 +39,9 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 	private int size;
 
 	private class Evictor extends Thread {
-		
-		private final Logger LOGGER_EVICTOR=Logger.getLogger(Evictor.class.getCanonicalName());
-		
+
+		private final Logger LOGGER_EVICTOR = Logger.getLogger(Evictor.class.getCanonicalName());
+
 		@Override
 		public void run() {
 			while (!isShutDown()) {
@@ -54,7 +56,7 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 						PoolThreadImpl<EVENT> poolThread = poolIterator.next();
 						if (poolThread.isExpired()) {
 							try {
-								LOGGER_EVICTOR.log(Level.INFO,"removing thread={}", poolThread.getName());
+								LOGGER_EVICTOR.log(Level.INFO, "removing thread={}", poolThread.getName());
 								poolThread.shutdown();
 								poolThread.interrupt();
 							} catch (Throwable t) {
@@ -72,7 +74,7 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 						}
 						if (!existLeader()) {
 							try {
-								LOGGER_EVICTOR.log(Level.INFO,"new leader election");
+								LOGGER_EVICTOR.log(Level.INFO, "new leader election");
 								startLeaderElection();
 							} catch (Throwable t) {
 							}
@@ -80,7 +82,7 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 					}
 
 				} catch (Throwable e) {
-					LOGGER_EVICTOR.log(Level.WARNING,e.getMessage(), e);
+					LOGGER_EVICTOR.log(Level.WARNING, e.getMessage(), e);
 				}
 
 			}
@@ -104,6 +106,7 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 		}
 
 	};
+
 
 	public <HANDLER extends EventHandler<EVENT>> PoolImpl(int size, Class<HANDLER> eventHandler) {
 
@@ -137,6 +140,18 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 		return existLeader.compareAndSet(false, true);
 	}
 
+	@Override
+	public void join() {
+		while (!stopReceiving) {
+			synchronized (stopMutex) {
+				try {
+					stopMutex.wait(100);
+				} catch (InterruptedException e) {
+				}
+			}
+		}
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -144,12 +159,12 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 	 */
 	@Override
 	public void stop() {
-		LOGGER.log(Level.INFO,"stopping pool");
+		LOGGER.log(Level.INFO, "stopping pool");
 		this.stop = true;
 		for (PoolThread<EVENT> poolThread : this.threadPool) {
 			poolThread.shutdown();
 		}
-		LOGGER.log(Level.INFO,"pool stopped");
+		LOGGER.log(Level.INFO, "pool stopped");
 	}
 
 	/*
@@ -159,7 +174,7 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 	 */
 	@Override
 	public void start() {
-		LOGGER.log(Level.INFO,"starting pool");
+		LOGGER.log(Level.INFO, "starting pool");
 		this.stop = false;
 		for (PoolThreadImpl<EVENT> poolThread : this.threadPool) {
 			poolThread.start();
@@ -168,8 +183,8 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 		startLeaderElection();
 
 		evictor.start();
-		
-		LOGGER.log(Level.INFO,"pool started");
+
+		LOGGER.log(Level.INFO, "pool started");
 	}
 
 	/*
