@@ -2,12 +2,17 @@ package it.concurrent.leadfollow.impl;
 
 import it.concurrent.leadfollow.Event;
 import it.concurrent.leadfollow.EventHandler;
+import it.concurrent.leadfollow.Pool;
 import it.concurrent.leadfollow.PoolThread;
 
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class PoolThreadImpl<EVENT extends Event> extends Thread implements PoolThread<EVENT> {
+public final class PoolThreadImpl<EVENT extends Event> extends Thread implements PoolThread<EVENT> {
+
+	private static final Logger LOGGER = Logger.getLogger(Pool.class.getCanonicalName());
 
 	private Object parking;
 
@@ -20,8 +25,8 @@ public class PoolThreadImpl<EVENT extends Event> extends Thread implements PoolT
 	private AtomicBoolean isLeader = new AtomicBoolean(false);
 
 	private static final int MAX_EXPIRED_TIME = 30000;
-	
-	private volatile boolean stopped=false;
+
+	private volatile boolean stopped = false;
 
 	public PoolThreadImpl(Object parking, PoolImpl<EVENT> pool, EventHandler<EVENT> eventHandler) {
 		this.parking = parking;
@@ -31,9 +36,9 @@ public class PoolThreadImpl<EVENT extends Event> extends Thread implements PoolT
 
 	@Override
 	public void run() {
-		try {
-			while (!this.isStopped() ) {
 
+		while (!this.isStopped()) {
+			try {
 				while (pool.existLeader() && !this.isStopped()) {
 
 					synchronized (parking) {
@@ -43,13 +48,13 @@ public class PoolThreadImpl<EVENT extends Event> extends Thread implements PoolT
 						}
 						isLeader.set(false);
 						parking.wait();
-						Thread.currentThread().setPriority(Thread.NORM_PRIORITY);
+						setThreadPriority(Thread.NORM_PRIORITY);
 					}
-					
+
 				}
 
 				isLeader.set(true);
-				Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+				setThreadPriority(Thread.MAX_PRIORITY);
 
 				EVENT event = eventHandler.receive();
 
@@ -61,20 +66,26 @@ public class PoolThreadImpl<EVENT extends Event> extends Thread implements PoolT
 					pool.stopReceiving();
 					return;
 				}
-
+				LOGGER.log(Level.FINE,"starting leader election");
 				pool.startLeaderElection();
 
 				heartBeat();
+				LOGGER.log(Level.FINE,"starting dispatching thread={}",Thread.currentThread().getName());
 				eventHandler.dispatch(event);
+			} catch (Throwable e) {
+				LOGGER.log(Level.WARNING,e.getMessage(), e);
 			}
-		} catch (Throwable e) {
-
 		}
 	}
 
-	protected boolean isStopped(){
+	private void setThreadPriority(int priority) {
+		Thread.currentThread().setPriority(priority);
+	}
+
+	private boolean isStopped() {
 		return pool.isToStop() || stopped;
 	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -82,7 +93,8 @@ public class PoolThreadImpl<EVENT extends Event> extends Thread implements PoolT
 	 */
 	@Override
 	public void shutdown() {
-		this.stopped=true;
+		LOGGER.log(Level.FINE,"shutdown thread={}",getName());
+		this.stopped = true;
 		synchronized (this.parking) {
 			this.parking.notify();
 		}

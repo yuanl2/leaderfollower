@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
@@ -36,6 +37,9 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 	private int size;
 
 	private class Evictor extends Thread {
+		
+		private final Logger LOGGER_EVICTOR=Logger.getLogger(Evictor.class.getCanonicalName());
+		
 		@Override
 		public void run() {
 			while (!isShutDown()) {
@@ -50,6 +54,7 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 						PoolThreadImpl<EVENT> poolThread = poolIterator.next();
 						if (poolThread.isExpired()) {
 							try {
+								LOGGER_EVICTOR.log(Level.INFO,"removing thread={}", poolThread.getName());
 								poolThread.shutdown();
 								poolThread.interrupt();
 							} catch (Throwable t) {
@@ -67,13 +72,15 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 						}
 						if (!existLeader()) {
 							try {
+								LOGGER_EVICTOR.log(Level.INFO,"new leader election");
 								startLeaderElection();
 							} catch (Throwable t) {
 							}
 						}
 					}
 
-				} catch (Throwable t) {
+				} catch (Throwable e) {
+					LOGGER_EVICTOR.log(Level.WARNING,e.getMessage(), e);
 				}
 
 			}
@@ -137,10 +144,12 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 	 */
 	@Override
 	public void stop() {
+		LOGGER.log(Level.INFO,"stopping pool");
 		this.stop = true;
 		for (PoolThread<EVENT> poolThread : this.threadPool) {
 			poolThread.shutdown();
 		}
+		LOGGER.log(Level.INFO,"pool stopped");
 	}
 
 	/*
@@ -150,6 +159,7 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 	 */
 	@Override
 	public void start() {
+		LOGGER.log(Level.INFO,"starting pool");
 		this.stop = false;
 		for (PoolThreadImpl<EVENT> poolThread : this.threadPool) {
 			poolThread.start();
@@ -158,6 +168,8 @@ public class PoolImpl<EVENT extends Event> implements Pool<EVENT> {
 		startLeaderElection();
 
 		evictor.start();
+		
+		LOGGER.log(Level.INFO,"pool started");
 	}
 
 	/*
