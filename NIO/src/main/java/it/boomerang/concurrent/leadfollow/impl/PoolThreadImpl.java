@@ -1,9 +1,9 @@
-package it.concurrent.leadfollow.impl;
+package it.boomerang.concurrent.leadfollow.impl;
 
-import it.concurrent.leadfollow.Event;
-import it.concurrent.leadfollow.EventHandler;
-import it.concurrent.leadfollow.Pool;
-import it.concurrent.leadfollow.PoolThread;
+import it.boomerang.concurrent.leadfollow.Event;
+import it.boomerang.concurrent.leadfollow.EventHandler;
+import it.boomerang.concurrent.leadfollow.Pool;
+import it.boomerang.concurrent.leadfollow.PoolThread;
 
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;

@@ -1,6 +1,6 @@
-package it.concurrent.leadfollow;
+package it.boomerang.concurrent.leadfollow;
 
-import it.concurrent.leadfollow.impl.PoolImpl;
+import it.boomerang.concurrent.leadfollow.impl.PoolImpl;
 
 public class PoolFactory {
 	

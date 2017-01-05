@@ -1,4 +1,7 @@
-package it.concurrent.leadfollow;
+package it.boomerang.concurrent.leadfollow;
+
+import it.boomerang.concurrent.leadfollow.Pool;
+import it.boomerang.concurrent.leadfollow.PoolFactory;
 
 import org.junit.Assert;
 import org.junit.Test;

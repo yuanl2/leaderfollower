@@ -1,4 +1,4 @@
-package it.concurrent.leadfollow;
+package it.boomerang.concurrent.leadfollow;
 
 public interface Pool<EVENT extends Event> {
 

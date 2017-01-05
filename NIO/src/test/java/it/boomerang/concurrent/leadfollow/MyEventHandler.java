@@ -1,6 +1,6 @@
-package it.concurrent.leadfollow;
+package it.boomerang.concurrent.leadfollow;
 
-import it.concurrent.leadfollow.EventHandler;
+import it.boomerang.concurrent.leadfollow.EventHandler;
 
 import java.util.HashMap;
 import java.util.Map;

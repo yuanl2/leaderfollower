@@ -1,4 +1,6 @@
-package it.concurrent.leadfollow;
+package it.boomerang.concurrent.leadfollow;
+
+import it.boomerang.concurrent.leadfollow.Event;
 
 public class MyEvent implements Event {
 

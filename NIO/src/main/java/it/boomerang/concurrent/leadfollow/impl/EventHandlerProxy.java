@@ -1,8 +1,8 @@
-package it.concurrent.leadfollow.impl;
+package it.boomerang.concurrent.leadfollow.impl;
 
-import it.concurrent.leadfollow.Event;
-import it.concurrent.leadfollow.EventHandler;
-import it.concurrent.leadfollow.EventHandlerListener;
+import it.boomerang.concurrent.leadfollow.Event;
+import it.boomerang.concurrent.leadfollow.EventHandler;
+import it.boomerang.concurrent.leadfollow.EventHandlerListener;
 
 public class EventHandlerProxy<EVENT extends Event,HANDLER extends EventHandler<EVENT>> implements EventHandler<EVENT> {
 
